@@ -63,7 +63,7 @@ class SqueezeBoxServer():
 		return self.query("playlistcontrol", "cmd:load", "album_id:"+str(id))
 		
 	def pause(self):
-			return self.query("pause")
+		return self.query("pause")
 	
 	def previousSong(self):
 		return self.query("playlist", "index", "-1")

@@ -1,0 +1,31 @@
+Headers
+
+POST /jsonrpc.js HTTP/1.1
+Content-Length: 92
+Host: 192.168.123.101:9000
+Content-Type: application/json
+Accept: application/json
+
+Get current_title
+
+{"params": ["00:0f:55:bc:34:37", ["current_title", "?"]], "id": 1, "method": "slim.request"}
+
+-->
+
+{"method":"slim.request","id":1,"result":{"_current_title":"The One I Love"},"params":["00:0f:55:bc:34:37",["current_title","?"]]}
+
+Get time
+
+{"params": ["00:0f:55:bc:34:37", ["time", "?"]], "id": 123, "method": "slim.request"}
+-->
+{"params":["00:0f:55:bc:34:37",["time","?"]],"result":{"_time":32.23805701828},"method":"slim.request","id":123}
+
+Get state
+{"params": ["00:0f:55:bc:34:37", ["mode", "?"]], "id": 123, "method": "slim.request"}
+-->
+{"result":{"_mode":"pause"},"params":["00:0f:55:bc:34:37",["mode","?"]],"id":123,"method":"slim.request"}
+
+-- OR -->
+{"params":["00:0f:55:bc:34:37",["mode","?"]],"result":{"_mode":"play"},"method":"slim.request","id":123}
+-- OR -->
+{"id":123,"method":"slim.request","params":["00:0f:55:bc:34:37",["mode","?"]],"result":{"_mode":"stop"}}
