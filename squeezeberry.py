@@ -14,6 +14,7 @@
 #    See <http://www.gnu.org/licenses/> to get a copy of the GNU General 
 #    Public License.
 
+import pdb
 import urllib2
 import simplejson
 import RPi.GPIO as GPIO
@@ -21,11 +22,11 @@ from time import sleep
 import threading
 import subprocess
 import gaugette.rotary_encoder
+import gaugette.gpio
 
 # Class qui gere toutes les communications avec le serveur squeezebox
 class SqueezeBoxServer():
-
-	def __init__(self, host="127.0.0.1", port=9000, player_id=""):
+	def __init__(self, host="192.168.123.101", port=9000, player_id="00:0f:55:bc:34:37"):
 		self.host = host
 		self.port = port
 		self.server_url = "http://%s:%s/jsonrpc.js" % (self.host, self.port)
@@ -63,7 +64,7 @@ class SqueezeBoxServer():
 		return self.query("playlistcontrol", "cmd:load", "album_id:"+str(id))
 		
 	def pause(self):
-		return self.query("pause")
+			return self.query("pause")
 	
 	def previousSong(self):
 		return self.query("playlist", "index", "-1")
@@ -76,6 +77,9 @@ class SqueezeBoxServer():
 
 	def getCurrentRadioTitle(self, radio):
 		return self.query("favorites", "items", 0, 99)['loop_loop'][radio]['name']
+		
+	def getCurrentSongTime(self):
+		return self.query("time", "?")['time']
 	
 
 
@@ -216,12 +220,14 @@ class HD44780(threading.Thread):
 class UINavigation(threading.Thread):
 	
 	def __init__(self):    
+		#pdb.set_trace()
 		GPIO.setmode(GPIO.BOARD)
 		GPIO.setup(11, GPIO.IN)
 		GPIO.setup(15, GPIO.IN)
+		gpio = gaugette.gpio.GPIO()
 		A_PIN  = 7
 		B_PIN  = 9
-		self.encoder = gaugette.rotary_encoder.RotaryEncoder.Worker(A_PIN, B_PIN)
+		self.encoder = gaugette.rotary_encoder.RotaryEncoder.Worker(gpio, A_PIN, B_PIN)
 		self.encoder.start()
 		self.current_artist=0
 		self.current_artist_album_count=0
@@ -233,15 +239,18 @@ class UINavigation(threading.Thread):
 		self.back=False
 		self.level="root"
 		self.cursor=0
-		self.sbs = SqueezeBoxServer(host="192.168.0.100",port=9000, player_id="80:1f:02:82:3a:50")
+		self.sbs = SqueezeBoxServer(host="192.168.123.101",port=9000, player_id="00:0f:55:bc:34:37")
 		self.lcd= HD44780()
 		self.sbs.setVolume(100)
 		self.paused = False
+		
+		#pdb.set_trace()
+		
 		threading.Thread.__init__(self)
 		
 	def affiche(self,texte):
 		self.lcd.LcdSetMessage(texte)
-		#print(texte)
+		print(texte)
 		
 	def update_screen(self):
 		if (self.level == "root"):
@@ -260,7 +269,7 @@ class UINavigation(threading.Thread):
 			self.affiche(self.sbs.getArtistAlbum(self.sbs.getArtists()[self.current_artist]['id'])[self.current_album]['album'])
 		elif (self.level == "song"):
 			if (self.paused==False):
-				self.affiche(self.sbs.getArtists()[self.current_artist]['artist']+"\n"+self.sbs.getCurrentSongTitle())	
+				self.affiche(self.sbs.getArtists()[self.current_artist]['artist']+"\n"+self.sbs.getCurrentSongTitle() + " " + self.sbs.getCurrentSongTime())	
 			else:
 				self.affiche("Pause - " + self.sbs.getCurrentSongTitle())
 
@@ -367,7 +376,14 @@ class UINavigation(threading.Thread):
 			self.level="album"
 			self.update_screen()
 
+	def fastleft(self):
+		self.lbutton(True)
+			
+	def fastright(self):
+		self.rbutton(True)
+			
 	def run(self):
+		print("ui start")
 		self.lcd.start()
 		self.stop=False
 		tempo=.05
@@ -381,7 +397,7 @@ class UINavigation(threading.Thread):
 					self.update_screen()
 					horloge=0
 					
-			delta = self.encoder.get_delta()
+			delta = self.encoder.get_steps()
 			cumul += delta	
 			
 			if (cumul>=4):
@@ -410,10 +426,33 @@ class UINavigation(threading.Thread):
 		self.stop=True
 		self.lcd.Stop()
 
+def unknown():
+	print "unknown command"
+
+	
 if __name__ == '__main__':
 #	lcd = HD44780()
 #	lcd.start()
-		ui = UINavigation()
-		ui.start() 
+	print("hello")
+	#pdb.set_trace()
+		
+	ui = UINavigation()
+	ui.start()
+	
+	actions = {
+		"l" : ui.lbutton,
+		"L" : ui.fastleft,
+		"r" : ui.rbutton,
+		"R" : ui.fastright,
+		"p" : ui.pbutton,
+		"b" : ui.bbutton
+	}
+	
+	keepGoing = True
+	while keepGoing:
 		q = str(raw_input('Press ENTER to quit program\n'))
-		ui.Stop()
+		if q == "q":
+			keepGoing = False
+		else:
+			actions.get(q, unknown)()
+	ui.Stop()
