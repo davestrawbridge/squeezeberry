@@ -32,7 +32,7 @@ class SqueezeBoxServer():
 		self.server_url = "http://%s:%s/jsonrpc.js" % (self.host, self.port)
 		self.player_id = player_id
 		self.artists = self.query( "artists", 0, 9999)['artists_loop']
-		self.radio_count = self.query( "favorites", "items")['count']
+		self.radio_count = self.query( "Radio", "items")['count']
 		self.artist_count = len(self.artists)
 		
 	def query(self, *args):
@@ -76,13 +76,11 @@ class SqueezeBoxServer():
 		return self.query("current_title", "?")['_current_title']
 
 	def getCurrentRadioTitle(self, radio):
-		return self.query("favorites", "items", 0, 99)['loop_loop'][radio]['name']
+		return self.query("Radio", "items", 0, 99)['loop_loop'][radio]['name']
 		
 	def getCurrentSongTime(self):
-		return self.query("time", "?")['time']
+		return self.query("time", "?")['_time']
 	
-
-
 ############################
 # Class de controle du LCD #
 ############################
@@ -269,7 +267,10 @@ class UINavigation(threading.Thread):
 			self.affiche(self.sbs.getArtistAlbum(self.sbs.getArtists()[self.current_artist]['id'])[self.current_album]['album'])
 		elif (self.level == "song"):
 			if (self.paused==False):
-				self.affiche(self.sbs.getArtists()[self.current_artist]['artist']+"\n"+self.sbs.getCurrentSongTitle() + " " + self.sbs.getCurrentSongTime())	
+				t = self.sbs.getCurrentSongTime()
+				print(t)
+				print(type(t))
+				self.affiche(self.sbs.getArtists()[self.current_artist]['artist']+"\n"+self.sbs.getCurrentSongTitle())
 			else:
 				self.affiche("Pause - " + self.sbs.getCurrentSongTitle())
 
